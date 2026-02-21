@@ -1,17 +1,20 @@
 <?php
 
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\TicketController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
-Route::get('/', function () {
-    return Inertia::render('Welcome', [
-        'canLogin' => Route::has('login'),
-        'canRegister' => Route::has('register'),
-        'laravelVersion' => Application::VERSION,
-        'phpVersion' => PHP_VERSION,
-    ]);
+Route::get('/', fn () => redirect()->route('tickets.index'));
+
+
+Route::resource('tickets', TicketController::class)
+    ->only(['index', 'create', 'store']);
+
+Route::middleware('auth')->group(function () {
+    Route::patch('/tickets/{ticket}', [TicketController::class, 'update'])
+        ->name('tickets.update');
 });
 
 Route::get('/dashboard', function () {
