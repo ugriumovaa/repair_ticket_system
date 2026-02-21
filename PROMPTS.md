@@ -1,3 +1,5 @@
-- Реализация Enum Status
-- Описание StoreRequest и базовые правила валидации для полей `clientName`, `phone`, `address`, `problemText`
-- Описание работы и примеры использования State Machine для статусов new | assigned | in_progress | done | canceled
+[//]: # (- Реализация Enum Status)
+
+[//]: # (- Описание StoreRequest и базовые правила валидации для полей `clientName`, `phone`, `address`, `problemText`)
+
+[//]: # (- Описание работы и примеры использования State Machine для статусов new | assigned | in_progress | done | canceled)

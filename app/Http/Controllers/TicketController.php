@@ -84,17 +84,6 @@ class TicketController extends Controller
         return redirect()
             ->route('tickets.create')
             ->with('success', 'Ticket created');
-
-    }
-
-    public function show(string $id)
-    {
-        //
-    }
-
-    public function edit(string $id)
-    {
-        //
     }
 
     public function update(UpdateTicketDto $data, Ticket $ticket, TicketService $service)
@@ -109,8 +98,4 @@ class TicketController extends Controller
         return back()->with('success', 'Updated');
     }
 
-    public function destroy(string $id)
-    {
-        //
-    }
 }

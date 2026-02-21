@@ -4,6 +4,10 @@ import { computed, reactive } from 'vue'
 import GuestLayout from '@/Layouts/GuestLayout.vue'
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
 
+import Card from "@/Components/Card.vue";
+import Dropdown from "@/Components/Dropdown.vue";
+import DropdownButton from "@/Components/DropdownButton.vue";
+
 const page = usePage()
 
 const props = defineProps({
@@ -14,8 +18,6 @@ const props = defineProps({
     statuses: { type: Array, default: () => [] },
     technicians: { type: Array, default: () => [] },
 })
-
-console.log(props)
 
 const isDispatcher = computed(() => props.view === 'dispatcher')
 const isTechnician = computed(() => props.view === 'technician')
@@ -29,11 +31,12 @@ const patch = (id, payload) => {
         { preserveScroll: true }
     )
 }
-
-const assign = (t) => {
-    const techId = assignTo[t.id]
-    if (!techId) return
-    patch(t.id, { assigned_to: techId })
+const onAssign = ({ ticketId, techId }) => {
+    router.patch(
+        route('tickets.update', { ticket: ticketId }),
+        { assigned_to: techId },
+        { preserveScroll: true }
+    )
 }
 
 const cancel = (t) => patch(t.id, { status: 'canceled' })
@@ -61,7 +64,6 @@ const statusLabel = (s) => ({
     canceled: 'Canceled',
 }[s] ?? s)
 
-console.log('first row', rows.value?.[0])
 </script>
 
 <template>
@@ -69,8 +71,8 @@ console.log('first row', rows.value?.[0])
 
     <GuestLayout v-if="view === 'guest'">
         <div class="text-center space-y-6">
-            <h1 class="text-3xl font-semibold">Support</h1>
-            <p class="text-gray-600">Create a ticket and we will contact you.</p>
+            <h1 class="text-3xl font-semibold">Repair Ticket System</h1>
+            <p class="text-gray-600">Create a ticket.</p>
             <Link :href="route('tickets.create')" class="inline-block rounded bg-black px-6 py-3 text-white">
                 Create ticket
             </Link>
@@ -83,93 +85,50 @@ console.log('first row', rows.value?.[0])
             <div v-if="page.props.flash?.success" class="rounded border p-3 text-sm">
                 {{ page.props.flash.success }}
             </div>
+
             <div v-if="isDispatcher" class="flex items-center gap-3">
                 <span class="text-sm text-gray-600">Status:</span>
-                <select class="rounded border px-3 py-2" :value="filters?.status ?? ''" @change="applyStatusFilter">
-                    <option value="">All</option>
-                    <option v-for="s in statuses" :key="s" :value="s">{{ statusLabel(s) }}</option>
-                </select>
+                <Dropdown align="left" width="48">
+                    <template #trigger>
+                        <button
+                            type="button"
+                            class="inline-flex items-center rounded-md border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                        >
+                            {{ statusLabel(filters?.status || 'all') }}
+                            <svg class="ms-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                    </template>
+
+                    <template #content>
+                        <DropdownButton @click="router.get(route('tickets.index'), { status: undefined }, { preserveState: true, preserveScroll: true })"                        >
+                            All
+                        </DropdownButton>
+                        <DropdownButton
+                            v-for="s in statuses"
+                            :key="s"
+                            @click="router.get(route('tickets.index'), { status: s }, { preserveState: true, preserveScroll: true })"
+                        >
+                            {{ statusLabel(s) }}
+                        </DropdownButton>
+                    </template>
+                </Dropdown>
             </div>
 
             <div v-if="isDispatcher || isTechnician" class="grid grid-cols-1 gap-4">
-                <div
+                <Card
                     v-for="t in rows"
                     :key="t.id"
-                    class="rounded-lg border bg-white p-4 space-y-3"
-                >
-                    <div class="flex items-start justify-between gap-4">
-                        <div class="min-w-0">
-                            <div class="text-sm text-gray-500">Ticket #{{ t.id }}</div>
-                            <div class="font-semibold truncate">{{ t.client_name }}</div>
-                            <div class="text-sm text-gray-600">{{ t.phone }} · {{ t.address }}</div>
-                        </div>
-
-                        <div class="text-sm rounded border px-2 py-1 whitespace-nowrap">
-                            {{ statusLabel(t.status) }}
-                        </div>
-                    </div>
-
-                    <div v-if="t.problem_text" class="text-sm text-gray-700 whitespace-pre-wrap">
-                        {{ t.problem_text }}
-                    </div>
-                    <div v-if="isDispatcher" class="flex flex-wrap items-center gap-2 pt-2">
-                        <div v-if="t.assigned_to" class="text-sm text-gray-900">
-                            Assigned: {{ t.assigned_to.name }}
-                        </div>
-
-                        <select
-                            v-else
-                            class="h-9 w-56 rounded border px-2"
-                            v-model.number="assignTo[t.id]"
-                            :disabled="t.status !== 'new'"
-                        >
-                            <option value="" disabled>Select technician</option>
-                            <option
-                                v-for="tech in technicians"
-                                :key="tech.id"
-                                :value="tech.id"
-                            >
-                                {{ tech.name }}
-                            </option>
-                        </select>
-
-                        <button
-                            v-if="!t.assigned_to"
-                            class="h-9 rounded bg-black text-white px-3 disabled:opacity-50"
-                            :disabled="t.status !== 'new' || !assignTo[t.id]"
-                            @click="assign(t)"
-                        >
-                            Assign
-                        </button>
-
-                        <button
-                            class="h-9 rounded border px-3 disabled:opacity-50"
-                            :disabled="t.status === 'done' || t.status === 'canceled'"
-                            @click="cancel(t)"
-                        >
-                            Cancel
-                        </button>
-                    </div>
-
-                    <!-- Technician actions -->
-                    <div v-else-if="isTechnician" class="flex flex-wrap items-center gap-2 pt-2">
-                        <button
-                            class="h-9 rounded bg-black text-white px-3 disabled:opacity-50"
-                            :disabled="t.status !== 'assigned'"
-                            @click="take(t)"
-                        >
-                            Take
-                        </button>
-
-                        <button
-                            class="h-9 rounded border px-3 disabled:opacity-50"
-                            :disabled="t.status !== 'in_progress'"
-                            @click="complete(t)"
-                        >
-                            Complete
-                        </button>
-                    </div>
-                </div>
+                    :ticket="t"
+                    :view="view"
+                    :technicians="technicians"
+                    :assignTo="assignTo"
+                    @assign="onAssign"
+                    @cancel="cancel"
+                    @take="take"
+                    @complete="complete"
+                />
 
                 <div v-if="rows.length === 0" class="rounded border bg-white p-4 text-sm">
                     No tickets
