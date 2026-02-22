@@ -12,6 +12,5 @@ class TicketSearchDto extends Data
         public ?TicketStatus $status = null,
         public int $page = 1,
         public int $perPage = 10,
-    )
-    {}
+    ) {}
 }

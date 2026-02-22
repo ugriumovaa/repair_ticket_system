@@ -5,36 +5,15 @@ namespace App\Services;
 use App\Dto\Ticket\TicketCreateDto;
 use App\Dto\Ticket\TicketDto;
 use App\Dto\Ticket\TicketSearchDto;
+use App\Dto\Ticket\TicketUpdateDto;
 use App\Enums\TicketStatus;
+use App\Enums\UserRole;
 use App\Models\Ticket;
 use App\Models\User;
+use Illuminate\Pagination\AbstractPaginator;
 
 class TicketService
 {
-    public function getTickets(TicketSearchDto $ticketsSearchDto)
-    {
-        $query = Ticket::query()
-            ->with(['assignedTo:id,name'])
-            ->byStatus($ticketsSearchDto->status)
-            ->byAssignedTechnician($ticketsSearchDto->assigned_to)
-            ->latest();
-
-        $tickets = TicketDto::collect(
-            $query->paginate(
-                perPage: $ticketsSearchDto->perPage,
-                page: $ticketsSearchDto->page,
-            ),
-        );
-
-        return $tickets;
-    }
-    public function createTicket(TicketCreateDto $createDto): void
-    {
-        Ticket::create([
-            ...$createDto->toArray(),
-            'status' => TicketStatus::New,
-        ]);
-    }
     private const TRANSITIONS = [
         TicketStatus::New->value => [TicketStatus::Assigned, TicketStatus::Canceled],
         TicketStatus::Assigned->value => [TicketStatus::InProgress, TicketStatus::Canceled],
@@ -42,54 +21,81 @@ class TicketService
         TicketStatus::Done->value => [],
         TicketStatus::Canceled->value => [],
     ];
+
     private const STATUS_ROLES = [
         'dispatcher' => [TicketStatus::Assigned, TicketStatus::Canceled],
         'technician' => [TicketStatus::InProgress, TicketStatus::Done],
     ];
-    public function updateTicket(Ticket $ticket, User $actor, ?TicketStatus $newStatus, ?int $assignedTo): Ticket
+
+    public function getTickets(TicketSearchDto $searchDto): AbstractPaginator
     {
-        if ($assignedTo !== null) {
-            if (!$actor->hasRole('dispatcher')) {
-                abort(403, 'Only dispatcher can assign technician');
-            }
-            if ($ticket->status !== TicketStatus::New) {
-                abort(422, 'Only NEW ticket can be assigned');
+        $query = Ticket::query()
+            ->with(['assignedTo:id,name'])
+            ->byStatus($searchDto->status)
+            ->byAssignedTechnician($searchDto->assigned_to)
+            ->latest();
+
+        return TicketDto::collect(
+            $query->paginate(
+                perPage: $searchDto->perPage,
+                page: $searchDto->page,
+            ),
+        );
+    }
+
+    public function createTicket(TicketCreateDto $createDto): void
+    {
+        Ticket::create([
+            ...$createDto->toArray(),
+            'status' => TicketStatus::New,
+        ]);
+    }
+
+    public function updateTicket(TicketUpdateDto $updateDto): void
+    {
+        /** @var User $user */
+        $user = User::findOrFail($updateDto->userId);
+        /** @var Ticket $ticket */
+        $ticket = Ticket::findOrFail($updateDto->id);
+
+        if ($updateDto->assigned_to !== null) {
+            if (! $user->hasRole(UserRole::Dispatcher->value)) {
+                throw new \Exception('Only dispatcher can assign technician');
             }
 
-            $ticket->assigned_to = $assignedTo;
-            $this->setStatus($ticket, $actor, TicketStatus::Assigned);
+            $ticket->assigned_to = $updateDto->assigned_to;
+            $this->setStatus($ticket, $user, TicketStatus::Assigned);
         }
-        if ($newStatus !== null && $newStatus !== $ticket->status) {
-            $this->setStatus($ticket, $actor, $newStatus);
+
+        if ($updateDto->status !== null && $updateDto->status !== $ticket->status) {
+            $this->setStatus($ticket, $user, $updateDto->status);
         }
 
         $ticket->save();
-
-        return $ticket;
     }
-    private function setStatus(Ticket $ticket, User $actor, TicketStatus $to): void
+
+    private function setStatus(Ticket $ticket, User $user, TicketStatus $to): void
     {
-        $from = $ticket->status->value;
-        $toValue = $to->value;
+        $from = $ticket->status;
         $allowedTargets = [];
 
         foreach (self::STATUS_ROLES as $role => $targets) {
-            if ($actor->hasRole($role)) {
+            if ($user->hasRole($role)) {
                 $allowedTargets = array_merge($allowedTargets, $targets);
             }
         }
 
-        if (!in_array($toValue, $allowedTargets, true)) {
-            abort(403, 'Role cannot set this status');
+        if (! in_array($to, $allowedTargets, true)) {
+            throw new \Exception('Role cannot set this status');
         }
 
-        if ($actor->hasRole('technician') && $ticket->assigned_to !== $actor->id) {
-            abort(403, 'Not your ticket');
+        if ($user->hasRole(UserRole::Technician->value) && $ticket->assigned_to !== $user->id) {
+            throw new \Exception('Not your ticket');
         }
 
-        $allowedTransitions = self::TRANSITIONS[$from] ?? [];
-        if (!in_array($toValue, $allowedTransitions, true)) {
-            abort(422, "Invalid status transition: {$from} -> {$toValue}");
+        $allowedTransitions = self::TRANSITIONS[$from->value] ?? [];
+        if (! in_array($to, $allowedTransitions, true)) {
+            throw new \Exception("Invalid status transition: {$from} -> {$to}");
         }
 
         $ticket->status = $to;

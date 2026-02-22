@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class Ticket extends Model
 {
     use HasFactory;
+
     protected $fillable = [
         'client_name',
         'phone',
@@ -28,6 +29,7 @@ class Ticket extends Model
     {
         return $this->belongsTo(User::class, 'assigned_to');
     }
+
     public function scopeByStatus(Builder $query, ?TicketStatus $status): Builder
     {
         return $status
@@ -38,7 +40,7 @@ class Ticket extends Model
     public function scopeByAssignedTechnician(Builder $query, ?int $technicianId): Builder
     {
         return $technicianId
-            ? $query->where('assigned_id', $technicianId)
+            ? $query->where('assigned_to', $technicianId)
             : $query;
     }
 }

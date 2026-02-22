@@ -19,8 +19,6 @@ const props = defineProps({
     technicians: { type: Array, default: () => [] },
 })
 
-console.log()
-
 const isDispatcher = computed(() => props.view === 'dispatcher')
 const isTechnician = computed(() => props.view === 'technician')
 const rows = computed(() => props.tickets?.data ?? [])

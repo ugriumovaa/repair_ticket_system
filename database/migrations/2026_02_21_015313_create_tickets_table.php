@@ -1,9 +1,9 @@
 <?php
 
+use App\Enums\TicketStatus;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
-use App\Enums\TicketStatus;
 
 return new class extends Migration
 {

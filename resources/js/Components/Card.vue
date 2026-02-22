@@ -81,18 +81,6 @@ const statusLabel = (s) => ({
                     </DropdownButton>
                 </template>
             </Dropdown>
-
-            <!-- УДАЛИ кнопку Assign и assignTo проп -->
-
-<!--            <button-->
-<!--                v-if="!ticket.assigned_to"-->
-<!--                class="h-9 rounded bg-black text-white px-3 disabled:opacity-50"-->
-<!--                :disabled="ticket.status !== 'new' || !assignTo[ticket.id]"-->
-<!--                @click="emit('assign', ticket)"-->
-<!--            >-->
-<!--                Assign-->
-<!--            </button>-->
-
             <button
                 class="h-9 rounded border px-3 disabled:opacity-50"
                 :disabled="ticket.status === 'done' || ticket.status === 'canceled'"

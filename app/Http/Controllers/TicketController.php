@@ -9,7 +9,7 @@ use App\Enums\TicketStatus;
 use App\Enums\UserRole;
 use App\Http\Requests\Ticket\IndexRequest;
 use App\Http\Requests\Ticket\StoreRequest;
-use App\Models\Ticket;
+use App\Http\Requests\Ticket\UpdateRequest;
 use App\Services\TechnicianService;
 use App\Services\TicketService;
 use Illuminate\Http\RedirectResponse;
@@ -23,18 +23,11 @@ class TicketController extends Controller
         private readonly TechnicianService $technicianService,
     ) {}
 
-    public function index(IndexRequest $request)
+    public function index(IndexRequest $request): Response
     {
         $user = $request->user();
 
-        if (!$user) {
-            return Inertia::render('Tickets/Index', [
-                'view' => 'guest',
-                'tickets' => null,
-            ]);
-        }
-
-        if ($user->hasRole(UserRole::Dispatcher->value)) {
+        if ($user?->hasRole(UserRole::Dispatcher->value)) {
             $status = $request->validated('status');
             $searchDto = new TicketSearchDto(
                 status: $status ? TicketStatus::from($status) : null,
@@ -42,8 +35,8 @@ class TicketController extends Controller
                 perPage: 10,
             );
 
-           $tickets = $this->ticketService->getTickets($searchDto);
-           $technicians = $this->technicianService->getTechnicians();
+            $tickets = $this->ticketService->getTickets($searchDto);
+            $technicians = $this->technicianService->getTechnicians();
 
             return Inertia::render('Tickets/Index', [
                 'view' => 'dispatcher',
@@ -56,7 +49,7 @@ class TicketController extends Controller
             ]);
         }
 
-        if ($user->hasRole(UserRole::Technician->value)) {
+        if ($user?->hasRole(UserRole::Technician->value)) {
 
             $searchDto = new TicketSearchDto(
                 assigned_to: $user->id,
@@ -71,11 +64,16 @@ class TicketController extends Controller
                 'tickets' => $tickets,
             ]);
         }
+
+        return Inertia::render('Tickets/Index', [
+            'view' => 'guest',
+            'tickets' => null,
+        ]);
     }
 
     public function create(): Response
     {
-        return Inertia::render('Tickets/Create');
+        return Inertia::render('Tickets/Create', []);
     }
 
     public function store(StoreRequest $request): RedirectResponse
@@ -87,16 +85,15 @@ class TicketController extends Controller
             ->with('success', 'Ticket created');
     }
 
-    public function update(TicketUpdateDto $data, Ticket $ticket, TicketService $service)
+    public function update(int $id, UpdateRequest $request): RedirectResponse
     {
-        $service->updateTicket(
-            $ticket,
-            request()->user(),
-            $data->status,
-            $data->assigned_to,
-        );
+        $updateDto = TicketUpdateDto::from([
+            ...$request->validated(),
+            'id' => $id,
+            'userId' => $request->user()->id,
+        ]);
+        $this->ticketService->updateTicket($updateDto);
 
-        return back()->with('success', 'Updated');
+        return back()->with('success', 'Ticket updated');
     }
-
 }

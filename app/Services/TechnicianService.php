@@ -19,5 +19,4 @@ class TechnicianService
         return TechnicianDto::collect($technicians);
 
     }
-
 }
