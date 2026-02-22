@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Enums\UserRole;
 use App\Models\Ticket;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
@@ -19,12 +20,13 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        Ticket::factory(10)->create();
+        Ticket::factory(100)->create();
 
         app(PermissionRegistrar::class)->forgetCachedPermissions();
 
-        $dispatcherRole = Role::findOrCreate('dispatcher', 'web');
-        $technicianRole = Role::findOrCreate('technician', 'web');
+        $dispatcherRole = Role::findOrCreate(UserRole::Dispatcher->value, 'web');
+        $technicianRole = Role::findOrCreate(UserRole::Technician->value, 'web');
+
         $dispatcher = User::firstOrCreate(
             ['email' => 'dispatcher@example.com'],
             [

@@ -1,10 +1,12 @@
 <?php
 
-namespace App\Dto;
+namespace App\Dto\Ticket;
 
+use App\Dto\TechnicianDto;
+use App\Enums\TicketStatus;
 use Spatie\LaravelData\Data;
 
-class TicketsDto extends Data
+class TicketDto extends Data
 {
     public function __construct(
         public int $id,
@@ -12,8 +14,8 @@ class TicketsDto extends Data
         public string $phone,
         public string $address,
         public ?string $problem_text,
-        public string $status,
-        public ?array $assigned_to,
-        public ?string $created_at,
+        public TicketStatus $status,
+        public ?TechnicianDto $assigned_to,
     ) {}
+
 }

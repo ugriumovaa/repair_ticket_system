@@ -2,33 +2,51 @@
 
 namespace App\Services;
 
-use App\Dto\TicketCreateDto;
+use App\Dto\Ticket\TicketCreateDto;
+use App\Dto\Ticket\TicketDto;
+use App\Dto\Ticket\TicketSearchDto;
 use App\Enums\TicketStatus;
 use App\Models\Ticket;
 use App\Models\User;
 
 class TicketService
 {
-    public function createTask(TicketCreateDto $createDto): void
+    public function getTickets(TicketSearchDto $ticketsSearchDto)
+    {
+        $query = Ticket::query()
+            ->with(['assignedTo:id,name'])
+            ->byStatus($ticketsSearchDto->status)
+            ->byAssignedTechnician($ticketsSearchDto->assigned_to)
+            ->latest();
+
+        $tickets = TicketDto::collect(
+            $query->paginate(
+                perPage: $ticketsSearchDto->perPage,
+                page: $ticketsSearchDto->page,
+            ),
+        );
+
+        return $tickets;
+    }
+    public function createTicket(TicketCreateDto $createDto): void
     {
         Ticket::create([
             ...$createDto->toArray(),
             'status' => TicketStatus::New,
-            'assigned_to' => null
         ]);
     }
     private const TRANSITIONS = [
-        'new' => ['assigned', 'canceled'],
-        'assigned' => ['in_progress', 'canceled'],
-        'in_progress' => ['done', 'canceled'],
-        'done' => [],
-        'canceled' => [],
+        TicketStatus::New->value => [TicketStatus::Assigned, TicketStatus::Canceled],
+        TicketStatus::Assigned->value => [TicketStatus::InProgress, TicketStatus::Canceled],
+        TicketStatus::InProgress->value => [TicketStatus::Done, TicketStatus::Canceled],
+        TicketStatus::Done->value => [],
+        TicketStatus::Canceled->value => [],
     ];
     private const STATUS_ROLES = [
-        'dispatcher' => ['assigned', 'canceled'],
-        'technician' => ['in_progress', 'done'],
+        'dispatcher' => [TicketStatus::Assigned, TicketStatus::Canceled],
+        'technician' => [TicketStatus::InProgress, TicketStatus::Done],
     ];
-    public function update(Ticket $ticket, User $actor, ?TicketStatus $newStatus, ?int $assignedTo): Ticket
+    public function updateTicket(Ticket $ticket, User $actor, ?TicketStatus $newStatus, ?int $assignedTo): Ticket
     {
         if ($assignedTo !== null) {
             if (!$actor->hasRole('dispatcher')) {

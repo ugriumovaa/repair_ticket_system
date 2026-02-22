@@ -19,6 +19,8 @@ const props = defineProps({
     technicians: { type: Array, default: () => [] },
 })
 
+console.log()
+
 const isDispatcher = computed(() => props.view === 'dispatcher')
 const isTechnician = computed(() => props.view === 'technician')
 const rows = computed(() => props.tickets?.data ?? [])
@@ -42,7 +44,6 @@ const onAssign = ({ ticketId, techId }) => {
 const cancel = (t) => patch(t.id, { status: 'canceled' })
 const take = (t) => patch(t.id, { status: 'in_progress' })
 const complete = (t) => patch(t.id, { status: 'done' })
-
 const applyStatusFilter = (e) => {
     router.get(
         route('tickets.index'),
@@ -50,12 +51,10 @@ const applyStatusFilter = (e) => {
         { preserveState: true, preserveScroll: true }
     )
 }
-
 const go = (url) => {
     if (!url) return
     router.visit(url, { preserveState: true, preserveScroll: true })
 }
-
 const statusLabel = (s) => ({
     new: 'New',
     assigned: 'Assigned',

@@ -1,13 +1,13 @@
 <?php
 
-namespace App\Dto;
+namespace App\Dto\Ticket;
 
 use App\Enums\TicketStatus;
-use Spatie\LaravelData\Data;
 use Spatie\LaravelData\Attributes\Validation\Exists;
 use Spatie\LaravelData\Attributes\Validation\Nullable;
+use Spatie\LaravelData\Data;
 
-class UpdateTicketDto extends Data
+class TicketUpdateDto extends Data
 {
     public function __construct(
         #[Nullable]

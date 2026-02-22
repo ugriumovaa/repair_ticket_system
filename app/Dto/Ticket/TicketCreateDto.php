@@ -1,10 +1,10 @@
 <?php
 
-namespace App\Dto;
+namespace App\Dto\Ticket;
 
-use Spatie\LaravelData\Data;
 use Spatie\LaravelData\Attributes\Validation\Max;
 use Spatie\LaravelData\Attributes\Validation\StringType;
+use Spatie\LaravelData\Data;
 use Symfony\Contracts\Service\Attribute\Required;
 
 class TicketCreateDto extends Data

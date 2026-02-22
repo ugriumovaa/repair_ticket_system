@@ -2,23 +2,28 @@
 
 namespace App\Http\Controllers;
 
-use App\Dto\TicketCreateDto;
-use App\Dto\UpdateTicketDto;
-use App\Models\Ticket;
-use App\Models\User;
+use App\Dto\Ticket\TicketCreateDto;
+use App\Dto\Ticket\TicketSearchDto;
+use App\Dto\Ticket\TicketUpdateDto;
 use App\Enums\TicketStatus;
+use App\Enums\UserRole;
+use App\Http\Requests\Ticket\IndexRequest;
+use App\Http\Requests\Ticket\StoreRequest;
+use App\Models\Ticket;
+use App\Services\TechnicianService;
 use App\Services\TicketService;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
-use App\Http\Requests\Ticket\StoreRequest;
 
 class TicketController extends Controller
 {
-    public function __construct(private readonly TicketService $service) {}
+    public function __construct(
+        private readonly TicketService $ticketService,
+        private readonly TechnicianService $technicianService,
+    ) {}
 
-    public function index(Request $request)
+    public function index(IndexRequest $request)
     {
         $user = $request->user();
 
@@ -29,26 +34,20 @@ class TicketController extends Controller
             ]);
         }
 
-        if ($user->hasRole('dispatcher')) {
+        if ($user->hasRole(UserRole::Dispatcher->value)) {
+            $status = $request->validated('status');
+            $searchDto = new TicketSearchDto(
+                status: $status ? TicketStatus::from($status) : null,
+                page: $request->validated('page') ?? 1,
+                perPage: 10,
+            );
 
-            $status = $request->query('status');
-
-            $query = Ticket::query()
-                ->with(['assignedTo:id,name'])
-                ->latest();
-
-            if ($status && in_array($status, TicketStatus::values(), true)) {
-                $query->where('status', $status);
-            }
-
-            $technicians = User::role('technician')
-                ->select('id', 'name')
-                ->orderBy('name')
-                ->get();
+           $tickets = $this->ticketService->getTickets($searchDto);
+           $technicians = $this->technicianService->getTechnicians();
 
             return Inertia::render('Tickets/Index', [
                 'view' => 'dispatcher',
-                'tickets' => $query->paginate(10)->withQueryString(),
+                'tickets' => $tickets,
                 'filters' => [
                     'status' => $status,
                 ],
@@ -57,12 +56,15 @@ class TicketController extends Controller
             ]);
         }
 
-        if ($user->hasRole('technician')) {
-            $tickets = Ticket::query()
-                ->where('assigned_to', $user->id)
-                ->latest()
-                ->paginate(10)
-                ->withQueryString();
+        if ($user->hasRole(UserRole::Technician->value)) {
+
+            $searchDto = new TicketSearchDto(
+                assigned_to: $user->id,
+                page: $request->validated('page') ?? 1,
+                perPage: 10,
+            );
+
+            $tickets = $this->ticketService->getTickets($searchDto);
 
             return Inertia::render('Tickets/Index', [
                 'view' => 'technician',
@@ -71,7 +73,6 @@ class TicketController extends Controller
         }
     }
 
-
     public function create(): Response
     {
         return Inertia::render('Tickets/Create');
@@ -79,16 +80,16 @@ class TicketController extends Controller
 
     public function store(StoreRequest $request): RedirectResponse
     {
-        $this->service->createTask(TicketCreateDto::from($request->validated()));
+        $this->ticketService->createTicket(TicketCreateDto::from($request->validated()));
 
         return redirect()
             ->route('tickets.create')
             ->with('success', 'Ticket created');
     }
 
-    public function update(UpdateTicketDto $data, Ticket $ticket, TicketService $service)
+    public function update(TicketUpdateDto $data, Ticket $ticket, TicketService $service)
     {
-        $service->update(
+        $service->updateTicket(
             $ticket,
             request()->user(),
             $data->status,
