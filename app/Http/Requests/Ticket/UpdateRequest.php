@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests\Ticket;
 
+use App\Enums\TicketStatus;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rules\Enum;
 
 class UpdateRequest extends FormRequest
 {
@@ -22,9 +24,8 @@ class UpdateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            // TODO: make rule exist in assigned and enum to status
-            'status' => 'string',
-            'assigned_to' => 'int',
+            'status' => ['sometimes', new Enum(TicketStatus::class)],
+            'assigned_to' => ['sometimes', 'nullable', 'integer', 'exists:users,id'],
         ];
     }
 }

@@ -1,19 +1,20 @@
 <script setup>
 import { Head, Link, router, usePage } from '@inertiajs/vue3'
-import { computed, reactive } from 'vue'
+import { computed } from 'vue'
+
 import GuestLayout from '@/Layouts/GuestLayout.vue'
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
 
-import Card from "@/Components/Card.vue";
-import Dropdown from "@/Components/Dropdown.vue";
-import DropdownButton from "@/Components/DropdownButton.vue";
+import Card from '@/Components/Card.vue'
+import Dropdown from '@/Components/Dropdown.vue'
+import DropdownButton from '@/Components/DropdownButton.vue'
+import { statusLabel } from '@/lib/ticketStatus'
 
 const page = usePage()
 
 const props = defineProps({
     view: { type: String, required: true },
     tickets: { type: Object, default: null },
-
     filters: { type: Object, default: () => ({}) },
     statuses: { type: Array, default: () => [] },
     technicians: { type: Array, default: () => [] },
@@ -23,48 +24,23 @@ const isDispatcher = computed(() => props.view === 'dispatcher')
 const isTechnician = computed(() => props.view === 'technician')
 const rows = computed(() => props.tickets?.data ?? [])
 
-const assignTo = reactive({})
-const patch = (id, payload) => {
-    router.patch(
-        route('tickets.update', { ticket: id }),
-        payload,
-        { preserveScroll: true }
-    )
-}
-const onAssign = ({ ticketId, techId }) => {
-    router.patch(
-        route('tickets.update', { ticket: ticketId }),
-        { assigned_to: techId },
-        { preserveScroll: true }
-    )
-}
+const patch = (id, payload) =>
+    router.patch(route('tickets.update', { ticket: id }), payload, {
+        preserveScroll: true,
+    })
 
-const cancel = (t) => patch(t.id, { status: 'canceled' })
-const take = (t) => patch(t.id, { status: 'in_progress' })
-const complete = (t) => patch(t.id, { status: 'done' })
-const applyStatusFilter = (e) => {
-    router.get(
-        route('tickets.index'),
-        { status: e.target.value || undefined },
-        { preserveState: true, preserveScroll: true }
-    )
-}
-const go = (url) => {
-    if (!url) return
-    router.visit(url, { preserveState: true, preserveScroll: true })
-}
-const statusLabel = (s) => ({
-    new: 'New',
-    assigned: 'Assigned',
-    in_progress: 'In progress',
-    done: 'Done',
-    canceled: 'Canceled',
-}[s] ?? s)
+const onAssign = ({ ticketId, techId }) =>
+    patch(ticketId, { assigned_to: techId })
 
+const cancel = (id) => patch(id, { status: 'canceled' })
+const inProgress = (id) => patch(id, { status: 'in_progress' })
+const done = (id) => patch(id, { status: 'done' })
+
+const go = (url) =>
+    url && router.visit(url, { preserveState: true, preserveScroll: true })
 </script>
-
 <template>
-    <Head title="Tickets" />
+    <Head title="Tickets"/>
 
     <GuestLayout v-if="view === 'guest'">
         <div class="text-center space-y-6">
@@ -92,14 +68,18 @@ const statusLabel = (s) => ({
                             class="inline-flex items-center rounded-md border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
                         >
                             {{ statusLabel(filters?.status || 'all') }}
-                            <svg class="ms-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                            <svg class="ms-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"
+                                 fill="currentColor">
+                                <path fill-rule="evenodd"
+                                      d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                                      clip-rule="evenodd"/>
                             </svg>
                         </button>
                     </template>
 
                     <template #content>
-                        <DropdownButton @click="router.get(route('tickets.index'), { status: undefined }, { preserveState: true, preserveScroll: true })"                        >
+                        <DropdownButton
+                            @click="router.get(route('tickets.index'), { status: undefined }, { preserveState: true, preserveScroll: true })">
                             All
                         </DropdownButton>
                         <DropdownButton
@@ -120,11 +100,10 @@ const statusLabel = (s) => ({
                     :ticket="t"
                     :view="view"
                     :technicians="technicians"
-                    :assignTo="assignTo"
                     @assign="onAssign"
                     @cancel="cancel"
-                    @take="take"
-                    @complete="complete"
+                    @inProgress="inProgress"
+                    @done="done"
                 />
 
                 <div v-if="rows.length === 0" class="rounded border bg-white p-4 text-sm">

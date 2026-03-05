@@ -1,33 +1,19 @@
 <script setup>
 import { computed } from 'vue'
-
-import Dropdown from "@/Components/Dropdown.vue";
-import DropdownButton from "@/Components/DropdownButton.vue";
+import Dropdown from '@/Components/Dropdown.vue'
+import DropdownButton from '@/Components/DropdownButton.vue'
+import { statusLabel } from '@/lib/ticketStatus'
 
 const props = defineProps({
     ticket: { type: Object, required: true },
-    view: { type: String, required: true }, // dispatcher | technician
+    view: { type: String, required: true },
     technicians: { type: Array, default: () => [] },
-    assignTo: { type: Object, required: true },
 })
 
-const emit = defineEmits([
-    'assign',
-    'cancel',
-    'take',
-    'complete',
-])
+const emit = defineEmits(['assign', 'cancel', 'inProgress', 'done'])
 
 const isDispatcher = computed(() => props.view === 'dispatcher')
 const isTechnician = computed(() => props.view === 'technician')
-
-const statusLabel = (s) => ({
-    new: 'New',
-    assigned: 'Assigned',
-    in_progress: 'In progress',
-    done: 'Done',
-    canceled: 'Canceled',
-}[s] ?? s)
 </script>
 
 <template>
@@ -84,7 +70,7 @@ const statusLabel = (s) => ({
             <button
                 class="h-9 rounded border px-3 disabled:opacity-50"
                 :disabled="ticket.status === 'done' || ticket.status === 'canceled'"
-                @click="emit('cancel', ticket)"
+                @click="emit('cancel', ticket.id)"
             >
                 Cancel
             </button>
@@ -94,17 +80,17 @@ const statusLabel = (s) => ({
             <button
                 class="h-9 rounded bg-black text-white px-3 disabled:opacity-50"
                 :disabled="ticket.status !== 'assigned'"
-                @click="emit('take', ticket)"
+                @click="emit('inProgress', ticket.id)"
             >
-                Take
+                In progress
             </button>
 
             <button
                 class="h-9 rounded border px-3 disabled:opacity-50"
                 :disabled="ticket.status !== 'in_progress'"
-                @click="emit('complete', ticket)"
+                @click="emit('done', ticket.id)"
             >
-                Complete
+                Done
             </button>
         </div>
     </div>

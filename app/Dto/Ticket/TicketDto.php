@@ -2,7 +2,7 @@
 
 namespace App\Dto\Ticket;
 
-use App\Dto\TechnicianDto;
+use App\Dto\Technician\TechnicianDto;
 use App\Enums\TicketStatus;
 use Spatie\LaravelData\Data;
 

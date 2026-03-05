@@ -1,6 +1,6 @@
 ## Repair Ticket System
 
-A minimal repair service web application built with Laravel 12, Inertia.js (Vue 3) and Spatie Permission.
+A minimal repair service web application built with Laravel 12, Inertia.js (Vue 3).
 
 The system implements two roles:
 
@@ -8,7 +8,9 @@ The system implements two roles:
 
 - **Technician**
 
-It supports ticket creation, assignment, status transitions, filtering, and safe concurrent processing.
+It supports ticket creation, assignment, status transitions, filtering.
+
+---
 
 ### Tech Stack
 
@@ -24,51 +26,44 @@ It supports ticket creation, assignment, status transitions, filtering, and safe
 
 - Docker
 
+---
 
-Running the Project
-Option A — Docker (Recommended)
-docker compose up --build
+### Running the Project
 
-Application will be available at:
+ **Start Docker containers**
+ 
+`docker compose up -d --build`
 
-http://localhost:8000
+**Install dependencies**
 
-Then run migrations and seed:
+`docker compose exec app composer install`
 
-docker compose exec app php artisan migrate --seed
-Option B — Without Docker
+`docker compose exec app npm install`
 
-Install dependencies:
+`docker compose exec app npm run build`
 
-composer install
-npm install
+**Copy environment:**
 
-Copy environment:
+`cp .env.example .env`
 
-cp .env.example .env
-php artisan key:generate
+**Run migrations and seed:**
 
-Run migrations and seed:
+`docker compose exec app php artisan migrate --seed`
 
-php artisan migrate --seed
+---
 
-Build frontend:
+### Test Users
 
-npm run build
+After seeding, the following test users are available:
 
-Start server:
+**Dispatcher**
+- email: dispatcher@example.com
+- password: password
 
-php artisan serve
-Seeded Users
+**Technicians**
+- email: technician1@example.com
+- password: password
 
-The database seeder creates:
 
-Dispatcher
-email: dispatcher@example.com
-password: password
-Technicians
-email: technician1@example.com
-password: password
-
-email: technician2@example.com
-password: password
+- email: technician2@example.com
+- password: password

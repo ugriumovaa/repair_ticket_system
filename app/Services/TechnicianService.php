@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Dto\TechnicianDto;
+use App\Dto\Technician\TechnicianDto;
 use App\Enums\UserRole;
 use App\Models\User;
 use Illuminate\Support\Collection;

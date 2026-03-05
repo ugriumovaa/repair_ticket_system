@@ -5,6 +5,7 @@ services:
     image: nginx:latest
     ports:
       - "8076:80"
+    container_name: nginx
     volumes:
       - ./:/var/www/
       - ./_docker/nginx/conf.d/:/etc/nginx/conf.d/
@@ -15,6 +16,7 @@ services:
     build:
       context: .
       dockerfile: _docker/app/Dockerfile
+    container_name: app
     volumes:
       - ./:/var/www/
     depends_on:
@@ -25,6 +27,7 @@ services:
     restart: always
     volumes:
       - ./tmp/db:/var/lib/mysql
+    container_name: db
     environment:
       MYSQL_DB: repair_ticket_system
       MYSQL_ROOT_PASSWORD: root

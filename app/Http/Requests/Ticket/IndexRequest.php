@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests\Ticket;
 
+use App\Enums\TicketStatus;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rules\Enum;
 
 class IndexRequest extends FormRequest
 {
@@ -23,7 +25,7 @@ class IndexRequest extends FormRequest
     {
         return [
             'page' => 'nullable|int|min:1 ',
-            'status' => 'nullable|string',
+            'status' => ['sometimes', new Enum(TicketStatus::class)],
         ];
     }
 }
